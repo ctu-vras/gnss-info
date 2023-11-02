@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+signals:
+  BEIDOU:  # frequencies from https://safran-navigation-timing.com/wp-content/uploads/2023/05/GNSS-Spectrum-Poster-Apr-2023-1.pdf
+    "BEIDOU-BD1":
+      frequency: 2491.75
+    "BEIDOU-B1I":
+      frequency: 1561.098
+    "BEIDOU-B1Q":
+      frequency: 1561.098
+    "BEIDOU-B1C":
+      frequency: 1575.42
+    "BEIDOU-B1A":
+      frequency: 1575.42
+    "BEIDOU-B2I":
+      frequency: 1207.14
+    "BEIDOU-B2Q":
+      frequency: 1207.14
+    "BEIDOU-B2A":
+      frequency: 1176.45
+    "BEIDOU-B2B":
+      frequency: 1207.14
+    "BEIDOU-B3I":
+      frequency: 1268.52
+    "BEIDOU-B3Q":
+      frequency: 1268.52
+    "BEIDOU-B3A":
+      frequency: 1268.52
+blocks:  # IDs from https://files.igs.org/pub/resource/working_groups/multi_gnss/Metadata_SINEX_1.00.pdf
+  BEIDOU:
+    BDS-1:
+      signals: ["BEIDOU-BD1"]
+    BDS-2M:
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B2I", "BEIDOU-B2Q", "BEIDOU-B3I", "BEIDOU-B3Q"]
+    BDS-2G:
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B2I", "BEIDOU-B2Q", "BEIDOU-B3I", "BEIDOU-B3Q"]
+    BDS-2I:
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B2I", "BEIDOU-B2Q", "BEIDOU-B3I", "BEIDOU-B3Q"]
+    BDS-3SI-SECM:
+      signals: []
+    BDS-3SI-CAST:
+      signals: []
+    BDS-3SM-SECM:
+      signals: []
+    BDS-3SM-CAST:
+      signals: []
+    BDS-3G:
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B1C", "BEIDOU-B1A", "BEIDOU-B2A", "BEIDOU-B2B", "BEIDOU-B3I", "BEIDOU-B3Q", "BEIDOU-B3A"]
+    BDS-3I:
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B1C", "BEIDOU-B1A", "BEIDOU-B2A", "BEIDOU-B2B", "BEIDOU-B3I", "BEIDOU-B3Q", "BEIDOU-B3A"]
+    BDS-3M-CAST:
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B1C", "BEIDOU-B1A", "BEIDOU-B2A", "BEIDOU-B2B", "BEIDOU-B3I", "BEIDOU-B3Q", "BEIDOU-B3A"]
+    BDS-3M-SECM-A:
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B1C", "BEIDOU-B1A", "BEIDOU-B2A", "BEIDOU-B2B", "BEIDOU-B3I", "BEIDOU-B3Q", "BEIDOU-B3A"]
+    BDS-3M-SECM-B:
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B1C", "BEIDOU-B1A", "BEIDOU-B2A", "BEIDOU-B2B", "BEIDOU-B3I", "BEIDOU-B3Q", "BEIDOU-B3A"]

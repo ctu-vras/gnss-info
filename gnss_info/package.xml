@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!--
+SPDX-License-Identifier: BSD-3-Clause
+SPDX-FileCopyrightText: Czech Technical University in Prague
+-->
+
+<package format="3">
+  <name>gnss_info</name>
+  <version>1.0.0</version>
+  <description>Information about GNSS satellites and their constellations.</description>
+
+  <author email="peckama2@fel.cvut.cz">Martin Pecka</author>
+  <maintainer email="peckama2@fel.cvut.cz">Martin Pecka</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>gnss_info_msgs</depend>
+  <depend>roscpp</depend>
+
+  <build_depend>cras_cpp_common</build_depend>
+  <build_depend>gnsstk</build_depend>
+  <build_depend>libcurl-dev</build_depend>
+  <build_depend>yaml-cpp</build_depend>
+
+  <exec_depend>cras_cpp_common</exec_depend>
+  <exec_depend>gnsstk</exec_depend>
+  <exec_depend>libcurl</exec_depend>
+  <exec_depend>yaml-cpp</exec_depend>
+
+  <test_depend condition="$ROS_PYTHON_VERSION == 2">python-catkin-lint</test_depend>
+  <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-catkin-lint</test_depend>
+  <test_depend>roslint</test_depend>
+</package>

@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+signals:
+  GPS:  # frequencies from https://safran-navigation-timing.com/wp-content/uploads/2023/05/GNSS-Spectrum-Poster-Apr-2023-1.pdf
+    "GPS-L1-CA":
+      frequency: 1575.42
+    "GPS-L1C":
+      frequency: 1575.42
+    "GPS-L1P":
+      frequency: 1575.42
+    "GPS-L1M":
+      frequency: 1575.42
+    "GPS-L2C":
+      frequency: 1277.6
+    "GPS-L2P":
+      frequency: 1277.6
+    "GPS-L2M":
+      frequency: 1277.6
+    "GPS-L5":
+      frequency: 1176.45
+blocks:  # IDs from https://files.igs.org/pub/resource/working_groups/multi_gnss/Metadata_SINEX_1.00.pdf
+  GPS:
+    GPS-I:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L2P"]
+    GPS-II:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L2P"]
+    GPS-IIA:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L2P"]
+    GPS-IIR-A:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L2P"]
+    GPS-IIR-B:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L2P"]
+    GPS-IIR-M:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L1M", "GPS-L2P", "GPS-L2C", "GPS-L2M"]
+    GPS-IIF:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L1M", "GPS-L2P", "GPS-L2C", "GPS-L2M", "GPS-L5"]
+    GPS-IIIA:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L1M", "GPS-L1C", "GPS-L2P", "GPS-L2C", "GPS-L2M", "GPS-L5"]
+    GPS-IIIF:
+      signals: ["GPS-L1-CA", "GPS-L1P", "GPS-L1M", "GPS-L1C", "GPS-L2P", "GPS-L2C", "GPS-L2M", "GPS-L5"]

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+signals:
+  GALILEO:  # frequencies from https://safran-navigation-timing.com/wp-content/uploads/2023/05/GNSS-Spectrum-Poster-Apr-2023-1.pdf
+    "GALILEO-E1":
+      frequency: 1575.42
+    "GALILEO-E5A":
+      frequency: 1176.45
+    "GALILEO-E5B":
+      frequency: 1207.14
+    "GALILEO-E6":
+      frequency: 1278.75
+blocks:  # IDs from https://files.igs.org/pub/resource/working_groups/multi_gnss/Metadata_SINEX_1.00.pdf
+  GALILEO:
+    GAL-0A:
+      signals: ["GALILEO-E1", "GALILEO-E5A", "GALILEO-E5B", "GALILEO-E6"]
+    GAL-0B:
+      signals: ["GALILEO-E1", "GALILEO-E5A", "GALILEO-E5B", "GALILEO-E6"]
+    GAL-1:
+      signals: ["GALILEO-E1", "GALILEO-E5A", "GALILEO-E5B", "GALILEO-E6"]
+    GAL-2:
+      signals: ["GALILEO-E1", "GALILEO-E5A", "GALILEO-E5B", "GALILEO-E6"]

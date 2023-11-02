@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+signals:
+  GLONASS:  # frequencies from https://safran-navigation-timing.com/wp-content/uploads/2023/05/GNSS-Spectrum-Poster-Apr-2023-1.pdf
+    "GLONASS-L1-CA":
+      frequency: 1602.0
+      channel_step: 0.5625
+    "GLONASS-L1P":
+      frequency: 1602.0
+      channel_step: 0.5625
+    "GLONASS-L1OC":
+      frequency: 1600.995
+    "GLONASS-L1SC":
+      frequency: 1600.995
+    "GLONASS-L1OCM":
+      frequency: 1575.42
+    "GLONASS-L2-CA":
+      frequency: 1246.0
+      channel_step: 0.4375
+    "GLONASS-L2P":
+      frequency: 1246.0
+      channel_step: 0.4375
+    "GLONASS-L2OC":
+      frequency: 1248.06
+    "GLONASS-L2SC":
+      frequency: 1248.06
+    "GLONASS-L3OC":
+      frequency: 1202.025
+    "GLONASS-L3SC":
+      frequency: 1202.025
+    "GLONASS-L3OCM":
+      frequency: 1207.14
+    "GLONASS-L5OCM":
+      frequency: 1176.45
+blocks:  # IDs from https://files.igs.org/pub/resource/working_groups/multi_gnss/Metadata_SINEX_1.00.pdf
+  GLONASS:
+    GLO:
+      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L2P"]
+    GLO-M:
+      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L2-CA", "GLONASS-L2P"]
+    "GLO-M+":
+      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L3OC"]
+    "GLO-K1A":
+      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L3OC"]
+    "GLO-K1B":
+      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L3OC"]
+    "GLO-K2":
+      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L1OC", "GLONASS-L1SC", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L2OC", "GLONASS-L2SC", "GLONASS-L3OC"]
+    "GLO-KM":
+      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L1OC", "GLONASS-L1SC", "GLONASS-L1OCM", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L2OC", "GLONASS-L2SC", "GLONASS-L3OC", "GLONASS-L3SC", "GLONASS-L3OCM", "GLONASS-L5OCM"]

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+signals:
+  QZSS:  # frequencies from https://safran-navigation-timing.com/wp-content/uploads/2023/05/GNSS-Spectrum-Poster-Apr-2023-1.pdf
+    "QZSS-L1":
+      frequency: 1575.42
+    "QZSS-L2":
+      frequency: 1227.6
+    "QZSS-L5":
+      frequency: 1176.45
+    "QZSS-L6":
+      frequency: 1278.75
+blocks:  # IDs from https://files.igs.org/pub/resource/working_groups/multi_gnss/Metadata_SINEX_1.00.pdf
+  QZSS:
+    QZS-1:
+      signals: ["QZSS-L1", "QZSS-L2", "QZSS-L5", "QZSS-L6"]
+    QZS-2I:
+      signals: ["QZSS-L1", "QZSS-L2", "QZSS-L5", "QZSS-L6"]
+    QZS-2G:
+      signals: ["QZSS-L1", "QZSS-L2", "QZSS-L5", "QZSS-L6"]
+    QZS-2A:
+      signals: ["QZSS-L1", "QZSS-L2", "QZSS-L5", "QZSS-L6"]

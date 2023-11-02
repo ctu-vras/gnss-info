@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+SPDX-License-Identifier: BSD-3-Clause
+SPDX-FileCopyrightText: Czech Technical University in Prague
+-->
+
+<package format="3">
+  <name>gnss_info_msgs</name>
+  <version>1.0.0</version>
+  <description>Messages containing information about GNSS satellites and their constellations.</description>
+
+  <author email="peckama2@fel.cvut.cz">Martin Pecka</author>
+  <maintainer email="peckama2@fel.cvut.cz">Martin Pecka</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>message_generation</build_depend>
+
+  <exec_depend>message_runtime</exec_depend>
+
+  <depend>geographic_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <test_depend condition="$ROS_PYTHON_VERSION == 2">python-catkin-lint</test_depend>
+  <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-catkin-lint</test_depend>
+  <test_depend>roslint</test_depend>
+</package>

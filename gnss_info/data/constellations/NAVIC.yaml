@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-FileCopyrightText: Czech Technical University in Prague
+
+signals:
+  NAVIC:  # frequencies from https://safran-navigation-timing.com/wp-content/uploads/2023/05/GNSS-Spectrum-Poster-Apr-2023-1.pdf
+    "NAVIC-L1":
+      frequency: 1575.42
+    "NAVIC-L5":
+      frequency: 1176.45
+blocks:  # IDs from https://files.igs.org/pub/resource/working_groups/multi_gnss/Metadata_SINEX_1.00.pdf
+  NAVIC:
+    IRS-1I:
+      signals: ["NAVIC-L5"]
+    IRS-1G:
+      signals: ["NAVIC-L5"]
+    IRS-2G:
+      signals: ["NAVIC-L1", "NAVIC-L5"]
