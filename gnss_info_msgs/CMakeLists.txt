@@ -22,6 +22,7 @@ add_message_files(FILES
   SatellitesObservations.msg
   SatellitesOrbits.msg
   SignalObservation.msg
+  SkyView.msg
 )
 
 generate_messages(DEPENDENCIES
