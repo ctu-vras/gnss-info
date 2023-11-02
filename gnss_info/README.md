@@ -28,3 +28,11 @@ time instant.
                                            the listed constellations.
 - `~only_signals` (list of string): If nonempty, limits the published satellites to only those transmitting at least
                                     one of the listed signals.
+
+## Possible improvements:
+
+- Get GPS outages from https://www.navcen.uscg.gov/sites/default/files/gps/sof/current_sof.sof .
+- Get Galileo outages from NAGUs
+  - https://www.gsc-europa.eu/sites/default/files/sites/all/files/UNP_UNUFN.txt
+  - https://www.gsc-europa.eu/system-status/user-notifications-archived
+- Precise orbits from http://ftp.aiub.unibe.ch/CODE_MGEX/CODE/2023/ (ORB.SP3 files)
