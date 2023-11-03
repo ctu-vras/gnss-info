@@ -46,7 +46,7 @@ blocks:  # IDs from https://files.igs.org/pub/resource/working_groups/multi_gnss
     BDS-3SM-CAST:
       signals: []
     BDS-3G:
-      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B1C", "BEIDOU-B1A", "BEIDOU-B2A", "BEIDOU-B2B", "BEIDOU-B3I", "BEIDOU-B3Q", "BEIDOU-B3A"]
+      signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B1C-SBAS", "BEIDOU-B1A", "BEIDOU-B2A-SBAS", "BEIDOU-B2B-PPP", "BEIDOU-B3I", "BEIDOU-B3Q", "BEIDOU-B3A"]
     BDS-3I:
       signals: ["BEIDOU-B1I", "BEIDOU-B1Q", "BEIDOU-B1C", "BEIDOU-B1A", "BEIDOU-B2A", "BEIDOU-B2B", "BEIDOU-B3I", "BEIDOU-B3Q", "BEIDOU-B3A"]
     BDS-3M-CAST:

@@ -44,7 +44,7 @@ blocks:  # IDs from https://files.igs.org/pub/resource/working_groups/multi_gnss
     "GLO-K1A":
       signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L3OC"]
     "GLO-K1B":
-      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L3OC"]
+      signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L2OC", "GLONASS-L2SC", "GLONASS-L3OC"]
     "GLO-K2":
       signals: ["GLONASS-L1-CA", "GLONASS-L1P", "GLONASS-L1OC", "GLONASS-L1SC", "GLONASS-L2-CA", "GLONASS-L2P", "GLONASS-L2OC", "GLONASS-L2SC", "GLONASS-L3OC"]
     "GLO-KM":

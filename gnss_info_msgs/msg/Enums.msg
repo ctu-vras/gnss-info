@@ -95,6 +95,8 @@ string SIGNAL_BEIDOU_B1I = BEIDOU-B1I
 string SIGNAL_BEIDOU_B1Q = BEIDOU-B1Q
 # B1C public signal
 string SIGNAL_BEIDOU_B1C = BEIDOU-B1C
+# B1C SBAS signal
+string SIGNAL_BEIDOU_B1C_SBAS = BEIDOU-B1C-SBAS
 # B1C authorized signal
 string SIGNAL_BEIDOU_B1A = BEIDOU-B1A
 # B2I public signal
@@ -103,8 +105,12 @@ string SIGNAL_BEIDOU_B2I = BEIDOU-B2I
 string SIGNAL_BEIDOU_B2Q = BEIDOU-B2Q
 # B2a public signal
 string SIGNAL_BEIDOU_B2A = BEIDOU-B2A
+# B2a SBAS signal
+string SIGNAL_BEIDOU_B2A_SBAS = BEIDOU-B2A-SBAS
 # B2b public signal
 string SIGNAL_BEIDOU_B2B = BEIDOU-B2B
+# B2b PPP signal
+string SIGNAL_BEIDOU_B2B_PPP = BEIDOU-B2B-PPP
 # B3I public signal
 string SIGNAL_BEIDOU_B3I = BEIDOU-B3I
 # B3Q restricted signal
