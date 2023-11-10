@@ -18,29 +18,7 @@
 namespace gnss_info
 {
 
-/**
- * \brief Get constellation name from the given PRN string like E03.
- * \param[in] prn String PRN.
- * \return Constellation name (one of `gnss_info_msgs::Enums::CONSTELLATION_*` values). If invalid, empty string.
- */
-std::string getConstellationFromPRN(const std::string& prn);
-
-/**
- * \brief Convert the given PRN string like E03 to integer like 3 and constellation name.
- * \param[in] prn The PRN string.
- * \return A pair containing the numeric PRN and constellation name.
- */
-cras::optional<std::pair<int32_t, std::string>> prnStringToInt(const std::string& prn);
-
-/**
- * \brief Convert the given numeric PRN and constellation to string PRN like E03.
- * \param[in] prn The numeric PRN.
- * \param[in] constellation Constellation name (one of `gnss_info_msgs::Enums::CONSTELLATION_*` values).
- * \return The PRN string.
- */
-cras::optional<std::string> prnIntToString(int32_t prn, const std::string& constellation);
-
-class IGSSatelliteMetadataPrivate;
+struct IGSSatelliteMetadataPrivate;
 
 /**
  * \brief Wrapper around IGS satellite catalog which contains information about all public GNSS satellites.

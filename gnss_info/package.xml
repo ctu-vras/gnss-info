@@ -24,6 +24,7 @@ SPDX-FileCopyrightText: Czech Technical University in Prague
   <build_depend>cras_cpp_common</build_depend>
   <build_depend>eigen</build_depend>
   <build_depend>gnsstk</build_depend>
+  <build_depend>gnsstk_ros</build_depend>
   <build_depend>libcurl-dev</build_depend>
   <build_depend>libjsoncpp-dev</build_depend>
   <build_depend>yaml-cpp</build_depend>
@@ -32,6 +33,7 @@ SPDX-FileCopyrightText: Czech Technical University in Prague
   <exec_depend>cras_cpp_common</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>gnsstk</exec_depend>
+  <exec_depend>gnsstk_ros</exec_depend>
   <exec_depend>libcurl</exec_depend>
   <exec_depend>libjsoncpp</exec_depend>
   <exec_depend>python3-matplotlib</exec_depend>

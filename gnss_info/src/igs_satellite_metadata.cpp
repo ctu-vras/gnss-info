@@ -25,6 +25,8 @@
 #include <gnss_info/igs_satellite_metadata.h>
 #include <gnss_info_msgs/Enums.h>
 #include <gnss_info_msgs/SatelliteInfo.h>
+#include <gnsstk_ros/constellations.h>
+#include <gnsstk_ros/time.h>
 #include <ros/ros.h>
 #include <ros/package.h>
 
@@ -38,74 +40,7 @@ std::string longSinexTime(const gnsstk::Sinex::Time& t)
     return "20" + static_cast<std::string>(t);
 }
 
-std::string getConstellationFromPRN(const std::string& prn)
-{
-    if (prn.empty())
-        return "";
-
-    switch (prn[0])
-    {
-        case 'G':
-            return gnss_info_msgs::Enums::CONSTELLATION_GPS;
-        case 'R':
-            return gnss_info_msgs::Enums::CONSTELLATION_GLONASS;
-        case 'E':
-            return gnss_info_msgs::Enums::CONSTELLATION_GALILEO;
-        case 'C':
-            return gnss_info_msgs::Enums::CONSTELLATION_BEIDOU;
-        case 'J':
-            return gnss_info_msgs::Enums::CONSTELLATION_QZSS;
-        case 'I':
-            return gnss_info_msgs::Enums::CONSTELLATION_NAVIC;
-        default:
-            return "";
-    }
-}
-
-cras::optional<std::pair<int32_t, std::string>> prnStringToInt(const std::string& prn)
-{
-    auto prnString = prn;
-    if (std::isupper(prnString[0]))
-        prnString = prnString.substr(1);
-
-    const auto constellation = getConstellationFromPRN(prn);
-    if (constellation.empty())
-        return cras::nullopt;
-
-    try
-    {
-        // Get rid of leading zeros, they would trick parseInt32 into parsing as octal
-        while (!prnString.empty() && prnString[0] == '0')
-            prnString = prnString.substr(1);
-        return std::make_pair(cras::parseInt32(prnString), constellation);
-    }
-    catch (const std::invalid_argument& e)
-    {
-        return cras::nullopt;
-    }
-}
-
-cras::optional<std::string> prnIntToString(const int32_t prn, const std::string& constellation)
-{
-    std::string prefix;
-
-    if (constellation == gnss_info_msgs::Enums::CONSTELLATION_GPS)
-        prefix = "G";
-    if (constellation == gnss_info_msgs::Enums::CONSTELLATION_GLONASS)
-        prefix = "R";
-    if (constellation == gnss_info_msgs::Enums::CONSTELLATION_GALILEO)
-        prefix = "E";
-    if (constellation == gnss_info_msgs::Enums::CONSTELLATION_BEIDOU)
-        prefix = "C";
-    if (constellation == gnss_info_msgs::Enums::CONSTELLATION_QZSS)
-        prefix = "J";
-    if (constellation == gnss_info_msgs::Enums::CONSTELLATION_NAVIC)
-        prefix = "I";
-
-    return prefix + std::to_string(prn);
-}
-
-struct SatelliteIdentifier : public gnsstk::Sinex::DataType
+struct SatelliteIdentifier : gnsstk::Sinex::DataType
 {
     static const std::string BLOCK_TITLE;
     static const size_t MIN_LINE_LEN = 40;
@@ -395,7 +330,7 @@ public:
 class IgsSinexData : public gnsstk::Sinex::Data
 {
 public:
-    IgsSinexData() : gnsstk::Sinex::Data()
+    IgsSinexData()
     {
         gnsstk::Sinex::Data::initBlockFactory();
         auto& factory = gnsstk::Sinex::Data::blockFactory;
@@ -701,14 +636,7 @@ ros::Time sinexTimeToRosTime(const gnsstk::Sinex::Time& t)
 {
     if (t.year == 0 && t.doy == 0 && t.sod == 0)  // special meaning of all zeros
         return ros::Time::MAX;
-    long days, secs, daysOffset;  // NOLINT(runtime/int)
-    double frac;
-    gnsstk::YDSTime(1970, 0, 0.0).convertToCommonTime().get(daysOffset, secs, frac);
-    static_cast<gnsstk::CommonTime>(t).get(days, secs, frac);
-    return ros::Time() +
-        ros::Duration::DAY * (days - daysOffset) +
-        ros::Duration::SECOND * secs +
-        ros::Duration::SECOND * frac;
+    return gnsstk_ros::convert(t);
 }
 
 std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo>
@@ -762,30 +690,8 @@ cras::optional<gnss_info_msgs::SatelliteInfo> IGSSatelliteMetadata::getSatellite
     msg.satcat_id = satcatID;
     msg.name = cras::split(satinfo.comment, ";", 1).back();
     cras::strip(msg.name);
-    switch (svn[0])
-    {
-        case 'G':
-            msg.constellation = gnss_info_msgs::Enums::CONSTELLATION_GPS;
-            break;
-        case 'R':
-            msg.constellation = gnss_info_msgs::Enums::CONSTELLATION_GLONASS;
-            break;
-        case 'E':
-            msg.constellation = gnss_info_msgs::Enums::CONSTELLATION_GALILEO;
-            break;
-        case 'C':
-            msg.constellation = gnss_info_msgs::Enums::CONSTELLATION_BEIDOU;
-            break;
-        case 'J':
-            msg.constellation = gnss_info_msgs::Enums::CONSTELLATION_QZSS;
-            break;
-        case 'I':
-            msg.constellation = gnss_info_msgs::Enums::CONSTELLATION_NAVIC;
-            break;
-        default:
-            msg.constellation = "";
-            break;
-    }
+    const auto maybeConstellation = gnsstk_ros::getRosConstellationFromSVN(svn);
+    msg.constellation = maybeConstellation ? *maybeConstellation : "";
 
     // Find PRN valid for the given time
     for (const auto& prnItem : this->data->svnToSatPRN[svn])
@@ -853,8 +759,8 @@ cras::optional<gnss_info_msgs::SatelliteInfo> IGSSatelliteMetadata::getSatellite
 cras::optional<gnss_info_msgs::SatelliteInfo> IGSSatelliteMetadata::getSatelliteByPRN(
     const int32_t prn, const std::string& constellation, const ros::Time& time)
 {
-    const auto prnString = prnIntToString(prn, constellation);
-    if (!prnString)
+    const auto prnString = gnsstk_ros::prnIntToString(prn, constellation);
+    if (!prnString.has_value() || !prnString->empty())
         return cras::nullopt;
 
     return this->getSatelliteByPRN(*prnString, time);

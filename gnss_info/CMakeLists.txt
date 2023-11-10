@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   cras_cpp_common
   geographic_msgs
   gnss_info_msgs
+  gnsstk_ros
   roscpp
 )
 

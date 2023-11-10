@@ -18,7 +18,6 @@
 #include <gnsstk/NavLibrary.hpp>
 #include <gnsstk/OrbitData.hpp>
 #include <gnsstk/Position.hpp>
-#include <gnsstk/YDSTime.hpp>
 #include <jsoncpp/json/json.h>
 
 #include <cras_cpp_common/expected.hpp>
@@ -26,6 +25,9 @@
 #include <gnss_info/ethz_satdb_provider.h>
 #include <gnss_info/igs_satellite_metadata.h>
 #include <gnss_info_msgs/Enums.h>
+#include <gnsstk_ros/constellations.h>
+#include <gnsstk_ros/position.h>
+#include <gnsstk_ros/time.h>
 #include <ros/ros.h>
 
 #include "tle.h"  // NOLINT
@@ -55,7 +57,7 @@ struct DayIndex
 
     explicit operator ros::Time() const
     {
-        struct tm start{};
+        tm start{};
         start.tm_year = this->year - 1900;
         start.tm_mon = this->month - 1;
         start.tm_mday = this->day;
@@ -82,51 +84,6 @@ struct std::hash<gnss_info::DayIndex>
 
 namespace gnsstk
 {
-
-ros::Time gnssTimeToRosTime(const CommonTime& commonTime)
-{
-    long days, secs, daysOffset;  // NOLINT(runtime/int)
-    double frac;
-    YDSTime(1970, 0, 0.0).convertToCommonTime().get(daysOffset, secs, frac);
-    commonTime.get(days, secs, frac);
-    return ros::Time() +
-        ros::Duration::DAY * (days - daysOffset) +
-        ros::Duration::SECOND * secs +
-        ros::Duration::SECOND * frac;
-}
-
-CommonTime rosTimeToGnssTime(const ros::Time& rosTime)
-{
-    auto commonTime = YDSTime(1970, 0, 0.0).convertToCommonTime();
-    commonTime.addDays(rosTime.sec / ros::Duration::DAY.sec);
-    commonTime.addSeconds(static_cast<long>(rosTime.sec % ros::Duration::DAY.sec));  // NOLINT(runtime/int)
-    commonTime.addSeconds(rosTime.nsec * 1e-9);
-    return commonTime;
-}
-
-cras::optional<SatID> satelliteInfoToSatID(const gnss_info_msgs::SatelliteInfo& info)
-{
-    const auto maybeConstellationAndPrn = gnss_info::prnStringToInt(info.prn);
-    if (!maybeConstellationAndPrn.has_value())
-        return cras::nullopt;
-    const auto& [prn, constellationStr] = *maybeConstellationAndPrn;
-    SatelliteSystem system;
-    if (constellationStr == gnss_info_msgs::Enums::CONSTELLATION_GPS)
-        system = SatelliteSystem::GPS;
-    else if (constellationStr == gnss_info_msgs::Enums::CONSTELLATION_GALILEO)
-        system = SatelliteSystem::Galileo;
-    else if (constellationStr == gnss_info_msgs::Enums::CONSTELLATION_GLONASS)
-        system = SatelliteSystem::Glonass;
-    else if (constellationStr == gnss_info_msgs::Enums::CONSTELLATION_BEIDOU)
-        system = SatelliteSystem::BeiDou;
-    else if (constellationStr == gnss_info_msgs::Enums::CONSTELLATION_NAVIC)
-        system = SatelliteSystem::IRNSS;
-    else if (constellationStr == gnss_info_msgs::Enums::CONSTELLATION_QZSS)
-        system = SatelliteSystem::QZSS;
-    else
-        return cras::nullopt;
-    return SatID(prn, system);
-}
 
 class TLEOrbitData : public OrbitData
 {
@@ -228,7 +185,7 @@ public:
         const tle_t tleList{1, 1, &this->tle};
 
         double rs[6];
-        const auto rosWhen = gnssTimeToRosTime(when);
+        const auto rosWhen = gnsstk_ros::convert(when);
         gtime_t gtime {rosWhen.sec, rosWhen.nsec * 1e-9};
         if (!tle_pos(utc2gpst(gtime), "", this->tle.satno, "", &tleList, nullptr, rs))
         {
@@ -334,7 +291,7 @@ public:
                 return true;
 
             const auto& info = TLENavDataFactory::satelliteInfo[satcatID];
-            const auto satId = satelliteInfoToSatID(info);
+            const auto satId = gnsstk_ros::satelliteInfoToSatID(info);
             if (!satId.has_value())
                 return false;
 
@@ -345,7 +302,7 @@ public:
             navOut->signal.nav = NavType::Any;
             navOut->signal.messageType = NavMessageType::Almanac;
             ros::Time epoch(navIn.epoch.time, static_cast<uint32_t>(navIn.epoch.sec * 1e9));
-            navOut->timeStamp = rosTimeToGnssTime(epoch);
+            navOut->timeStamp = gnsstk_ros::convert(epoch);
 
             return true;
         }
@@ -423,7 +380,7 @@ cras::expected<bool, std::string> EthzSatdbProviderPrivate::download(const DayIn
         };
 
         std::stringstream readBuffer;
-        const auto url = cras::format(urlFormat, prefix.c_str(), startDate.c_str(), endDate.c_str());
+        const auto url = cras::format(this->urlFormat, prefix.c_str(), startDate.c_str(), endDate.c_str());
         const auto curl = curl_easy_init();
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1u);
@@ -617,7 +574,7 @@ cras::expected<std::unordered_map<uint32_t, gnss_info_msgs::SatellitePosition>, 
 EthzSatdbProvider::getECEFPositions(
     const ros::Time& time, const std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo>& satellites)
 {
-    const auto when = gnsstk::rosTimeToGnssTime(time);
+    const auto when = gnsstk_ros::convert(time);
 
     auto when1 = when, when2 = when;
     when1.addSeconds(-ros::Duration::DAY.sec * 3.0);
@@ -633,7 +590,7 @@ EthzSatdbProvider::getECEFPositions(
     std::list<std::string> errors;
     for (const auto& [satcatID, info] : satellites)
     {
-        const auto maybeSatID = gnsstk::satelliteInfoToSatID(info);
+        const auto maybeSatID = gnsstk_ros::satelliteInfoToSatID(info);
         if (!maybeSatID.has_value())
         {
             errors.push_back(cras::format("Failed to determine PRN of satellite %u (%s) at time %s.",
@@ -655,16 +612,7 @@ EthzSatdbProvider::getECEFPositions(
                 satcatID, info.name.c_str(), cras::to_string(time).c_str()));
             continue;
         }
-
-        gnss_info_msgs::SatellitePosition position;
-        position.satcat_id = satcatID;
-        position.position.x = xvt.x[0];
-        position.position.y = xvt.x[1];
-        position.position.z = xvt.x[2];
-        position.velocity.x = xvt.v[0];
-        position.velocity.y = xvt.v[1];
-        position.velocity.z = xvt.v[2];
-        positions[satcatID] = position;
+        positions[satcatID] = gnsstk_ros::convert(xvt, satcatID);
     }
 
     if (!errors.empty() && positions.empty())
@@ -682,16 +630,14 @@ EthzSatdbProvider::getSkyView(
     const ros::Time& time, const geographic_msgs::GeoPoint& receiverPosition, const double elevationMaskDeg,
     const std::unordered_map<uint32_t, gnss_info_msgs::SatellitePosition>& satelliteECEFPositions)
 {
-    const auto& Geodetic = gnsstk::Position::CoordinateSystem::Geodetic;
-    const auto& Cartesian = gnsstk::Position::CoordinateSystem::Cartesian;
-
-    gnsstk::Position recPos{receiverPosition.latitude, receiverPosition.longitude, receiverPosition.altitude, Geodetic};
-    recPos.transformTo(Cartesian);  // all following computations use Cartesian internally
+    gnsstk::Position recPos = gnsstk_ros::convert(receiverPosition);
+    // all following computations use Cartesian internally
+    recPos.transformTo(gnsstk::Position::CoordinateSystem::Cartesian);
 
     std::unordered_map<uint32_t, gnss_info_msgs::SatelliteSkyPosition> skyView;
     for (const auto& [satcatID, ecefPose] : satelliteECEFPositions)
     {
-        gnsstk::Position satPos {ecefPose.position.x, ecefPose.position.y, ecefPose.position.z, Cartesian};
+        const gnsstk::Position satPos = gnsstk_ros::convert(ecefPose.position);
         const auto elDeg = recPos.elevation(satPos);
         if (elDeg < elevationMaskDeg)
             continue;
