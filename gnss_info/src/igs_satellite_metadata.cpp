@@ -13,7 +13,7 @@
 
 #include <curl/curl.h>
 #include <gnsstk/FFData.hpp>
-#include <gnsstk/SinexStream.hpp>
+#include <gnsstk/SinexStream.hpp>  // Has to be before SinexData include
 #include <gnsstk/SinexData.hpp>
 #include <gnsstk/SinexTypes.hpp>
 #include <gnsstk/SinexBlock.hpp>
@@ -74,9 +74,12 @@ cras::optional<std::pair<int32_t, std::string>> prnStringToInt(const std::string
 
     try
     {
+        // Get rid of leading zeros, they would trick parseInt32 into parsing as octal
+        while (!prnString.empty() && prnString[0] == '0')
+            prnString = prnString.substr(1);
         return std::make_pair(cras::parseInt32(prnString), constellation);
     }
-    catch (const std::invalid_argument&)
+    catch (const std::invalid_argument& e)
     {
         return cras::nullopt;
     }
@@ -172,11 +175,11 @@ struct SatelliteIdentifier : public gnsstk::Sinex::DataType
 };
 const std::string SatelliteIdentifier::BLOCK_TITLE {"SATELLITE/IDENTIFIER"};  // NOLINT(runtime/string)
 
-struct SatellitePRN : public gnsstk::Sinex::DataType
+struct SatellitePRN : gnsstk::Sinex::DataType
 {
     static const std::string BLOCK_TITLE;
-    static const size_t MIN_LINE_LEN = 39;
-    static const size_t MAX_LINE_LEN = 80;
+    static constexpr size_t MIN_LINE_LEN = 39;
+    static constexpr size_t MAX_LINE_LEN = 80;
 
     std::string svn;  //!< SVN
     gnsstk::Sinex::Time validFrom;  //!< Time from which the entry is valid
@@ -241,11 +244,11 @@ struct SatellitePRN : public gnsstk::Sinex::DataType
 };
 const std::string SatellitePRN::BLOCK_TITLE {"SATELLITE/PRN"};  // NOLINT(runtime/string)
 
-struct SatelliteFrequencyChannel : public gnsstk::Sinex::DataType
+struct SatelliteFrequencyChannel : gnsstk::Sinex::DataType
 {
     static const std::string BLOCK_TITLE;
-    static const size_t MIN_LINE_LEN = 39;
-    static const size_t MAX_LINE_LEN = 80;
+    static constexpr size_t MIN_LINE_LEN = 39;
+    static constexpr size_t MAX_LINE_LEN = 80;
 
     std::string svn;  //!< SVN
     gnsstk::Sinex::Time validFrom;  //!< Time from which the entry is valid
@@ -459,8 +462,7 @@ bool IGSSatelliteMetadataPrivate::downloadMetadata() const
 {
     const auto curlCallback = +[](void *contents, size_t size, size_t nmemb, void *userp)
     {
-        *reinterpret_cast<std::stringstream*>(userp) <<
-            std::string(reinterpret_cast<char*>(contents), size * nmemb);
+        *static_cast<std::stringstream*>(userp) << std::string(static_cast<char*>(contents), size * nmemb);
         return size * nmemb;
     };
 
@@ -473,6 +475,7 @@ bool IGSSatelliteMetadataPrivate::downloadMetadata() const
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
     const auto res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
+
     if (res != CURLE_OK)
     {
         ROS_ERROR("Error downloading %s: %s\n", this->url.c_str(), curl_easy_strerror(res));
@@ -500,7 +503,6 @@ bool IGSSatelliteMetadataPrivate::downloadMetadata() const
         if (printable)
             outFile << line << "\r\n";
     }
-    outFile.close();
     ROS_INFO("Saved satellite metadata to %s.", this->cacheFile.c_str());
 
     return true;
@@ -602,7 +604,7 @@ IGSSatelliteMetadata::IGSSatelliteMetadata() : data(new IGSSatelliteMetadataPriv
         const std::string homeDirEnv{"HOME"};
 #endif
 
-        auto cacheEnv = std::getenv("XDG_CACHE_HOME");
+        const auto cacheEnv = std::getenv("XDG_CACHE_HOME");
         if (cacheEnv != nullptr)
             cacheDir = cacheEnv;
         else
@@ -665,7 +667,7 @@ bool IGSSatelliteMetadata::load()
     {
         if (dynamic_cast<const gnsstk::Sinex::Block<SatelliteIdentifier>*>(block))
         {
-            auto cb = dynamic_cast<const gnsstk::Sinex::Block<SatelliteIdentifier>*>(block);
+            const auto cb = dynamic_cast<const gnsstk::Sinex::Block<SatelliteIdentifier>*>(block);
             for (const auto& entry : const_cast<gnsstk::Sinex::Block<SatelliteIdentifier>*>(cb)->getData())
             {
                 this->data->svnToSatcat[entry.svn] = entry.satcatID;
@@ -675,7 +677,7 @@ bool IGSSatelliteMetadata::load()
         }
         else if (dynamic_cast<const gnsstk::Sinex::Block<SatellitePRN>*>(block))
         {
-            auto cb = dynamic_cast<const gnsstk::Sinex::Block<SatellitePRN>*>(block);
+            const auto cb = dynamic_cast<const gnsstk::Sinex::Block<SatellitePRN>*>(block);
             for (const auto& entry : const_cast<gnsstk::Sinex::Block<SatellitePRN>*>(cb)->getData())
             {
                 this->data->svnToSatPRN[entry.svn].push_back(entry);
@@ -683,7 +685,7 @@ bool IGSSatelliteMetadata::load()
         }
         else if (dynamic_cast<const gnsstk::Sinex::Block<SatelliteFrequencyChannel>*>(block))
         {
-            auto cb = dynamic_cast<const gnsstk::Sinex::Block<SatelliteFrequencyChannel>*>(block);
+            const auto cb = dynamic_cast<const gnsstk::Sinex::Block<SatelliteFrequencyChannel>*>(block);
             for (const auto& entry : const_cast<gnsstk::Sinex::Block<SatelliteFrequencyChannel>*>(cb)->getData())
             {
                 this->data->svnToSatChannel[entry.svn].push_back(entry);
@@ -716,9 +718,8 @@ IGSSatelliteMetadata::getSatellites(const ros::Time& time, const bool onlyActive
 {
     std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo> result;
 
-    for (const auto& svnAndSatcatID : this->data->svnToSatcat)
+    for (const auto& [svn, satcatID] : this->data->svnToSatcat)
     {
-        const auto& satcatID = svnAndSatcatID.second;
         auto maybeSatellite = this->getSatellite(satcatID, time);
         if (maybeSatellite && (!onlyActive || maybeSatellite->active))
         {
@@ -834,9 +835,8 @@ cras::optional<gnss_info_msgs::SatelliteInfo> IGSSatelliteMetadata::getSatellite
 cras::optional<gnss_info_msgs::SatelliteInfo> IGSSatelliteMetadata::getSatelliteByPRN(
     const std::string& prn, const ros::Time& time)
 {
-    for (const auto& svnAndSatPRN : this->data->svnToSatPRN)
+    for (const auto& [svn, satPRN] : this->data->svnToSatPRN)
     {
-        const auto& svn = svnAndSatPRN.first;
         for (const auto& prnItem : this->data->svnToSatPRN[svn])
         {
             if (prnItem.prn != prn)

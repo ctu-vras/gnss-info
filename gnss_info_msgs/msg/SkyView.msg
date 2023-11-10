@@ -7,4 +7,5 @@
 Header header  # Frame should be "wgs84" or any other datum in which the reference position is expressed.
 geographic_msgs/GeoPoint reference_position  # The reference position from which the sky is observed.
 float32 elevation_mask_deg  # Minimum elevation of satellites that are considered (in degrees).
-SatellitePosition[] satellites
+SatelliteSkyPosition[] satellites
+DOP dop

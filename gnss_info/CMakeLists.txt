@@ -4,22 +4,28 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(gnss_info)
 
+set(CMAKE_CXX_STANDARD 17)
+
 #catkin_lint: ignore_once literal_project_name
 find_package(catkin REQUIRED COMPONENTS
+  angles
   cras_cpp_common
+  geographic_msgs
   gnss_info_msgs
   roscpp
 )
 
 find_package(CURL REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(GNSSTK REQUIRED)
+find_package(jsoncpp REQUIRED)
 find_package(YAML-CPP REQUIRED)
 
 #catkin_lint: ignore_once literal_project_name
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES satellite_metadata
-  CATKIN_DEPENDS gnss_info_msgs roscpp
+  LIBRARIES satellite_metadata tle_reader
+  CATKIN_DEPENDS geographic_msgs gnss_info_msgs roscpp
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${YAML_CPP_INCLUDE_DIRS})
@@ -28,17 +34,31 @@ add_library(satellite_metadata src/igs_satellite_metadata.cpp)
 add_dependencies(satellite_metadata ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(satellite_metadata PUBLIC ${catkin_LIBRARIES} PRIVATE ${CURL_LIBRARIES} gnsstk ${YAML_CPP_LIBRARIES})
 
+add_library(tle_reader src/tle.c)
+
+add_library(orbital_data src/ethz_satdb_provider.cpp src/orbital_data_manager.cpp)
+add_dependencies(orbital_data ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(orbital_data PUBLIC ${catkin_LIBRARIES} PRIVATE ${CURL_LIBRARIES} Eigen3::Eigen gnsstk jsoncpp_lib satellite_metadata tle_reader)
+
 add_executable(publish_all_satellites nodes/publish_all_satellites.cpp)
 target_link_libraries(publish_all_satellites satellite_metadata)
 
-install(TARGETS publish_all_satellites
+add_executable(publish_sky_view nodes/publish_sky_view.cpp)
+target_link_libraries(publish_sky_view orbital_data)
+
+install(TARGETS publish_all_satellites publish_sky_view
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(TARGETS satellite_metadata
+install(TARGETS orbital_data satellite_metadata tle_reader
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+catkin_install_python(PROGRAMS
+  nodes/sky_plot
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/

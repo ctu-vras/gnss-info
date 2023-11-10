@@ -12,15 +12,16 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 add_message_files(FILES
+  DOP.msg
   Enums.msg
   SatelliteInfo.msg
   SatelliteObservation.msg
-  SatelliteOrbit.msg
   SatellitePosition.msg
   SatelliteSignal.msg
+  SatelliteSkyPosition.msg
   SatellitesList.msg
   SatellitesObservations.msg
-  SatellitesOrbits.msg
+  SatellitesPositions.msg
   SignalObservation.msg
   SkyView.msg
 )

@@ -16,17 +16,28 @@ SPDX-FileCopyrightText: Czech Technical University in Prague
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>geographic_msgs</depend>
   <depend>gnss_info_msgs</depend>
   <depend>roscpp</depend>
 
+  <build_depend>angles</build_depend>
   <build_depend>cras_cpp_common</build_depend>
+  <build_depend>eigen</build_depend>
   <build_depend>gnsstk</build_depend>
   <build_depend>libcurl-dev</build_depend>
+  <build_depend>libjsoncpp-dev</build_depend>
   <build_depend>yaml-cpp</build_depend>
 
+  <exec_depend>angles</exec_depend>
   <exec_depend>cras_cpp_common</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
   <exec_depend>gnsstk</exec_depend>
   <exec_depend>libcurl</exec_depend>
+  <exec_depend>libjsoncpp</exec_depend>
+  <exec_depend>python3-matplotlib</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>yaml-cpp</exec_depend>
 
   <test_depend condition="$ROS_PYTHON_VERSION == 2">python-catkin-lint</test_depend>
