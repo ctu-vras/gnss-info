@@ -587,6 +587,10 @@ EthzSatdbProvider::getECEFPositions(
     if (satellites.empty())
         return positions;
 
+    // Error of TLE positions is in the order of a few kilometers.
+    const auto posCov = std::pow(2000.0, 2);
+    const auto velCov = std::pow(1.0, 2);
+
     std::list<std::string> errors;
     for (const auto& [satcatID, info] : satellites)
     {
@@ -612,7 +616,7 @@ EthzSatdbProvider::getECEFPositions(
                 satcatID, info.name.c_str(), cras::to_string(time).c_str()));
             continue;
         }
-        positions[satcatID] = gnsstk_ros::convert(xvt, satcatID);
+        positions[satcatID] = gnsstk_ros::convert(xvt, satcatID, posCov, velCov);
     }
 
     if (!errors.empty() && positions.empty())

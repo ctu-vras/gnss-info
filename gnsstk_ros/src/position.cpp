@@ -42,7 +42,8 @@ geometry_msgs::Point convertToCartesianMsg(const gnsstk::Position& position)
     return msg;
 }
 
-gnss_info_msgs::SatellitePosition convert(const gnsstk::Xvt& xvt, const uint32_t satcatId)
+gnss_info_msgs::SatellitePosition convert(const gnsstk::Xvt& xvt, const uint32_t satcatId,
+    const double posCov, const double velCov)
 {
     gnss_info_msgs::SatellitePosition position;
     position.satcat_id = satcatId;
@@ -52,6 +53,8 @@ gnss_info_msgs::SatellitePosition convert(const gnsstk::Xvt& xvt, const uint32_t
     position.velocity.x = xvt.v[0];
     position.velocity.y = xvt.v[1];
     position.velocity.z = xvt.v[2];
+    position.position_covariance = {posCov, 0.0, 0.0, 0.0, posCov, 0.0, 0.0, 0.0, posCov};
+    position.velocity_covariance = {velCov, 0.0, 0.0, 0.0, velCov, 0.0, 0.0, 0.0, velCov};
     return position;
 }
 

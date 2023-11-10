@@ -45,8 +45,10 @@ geometry_msgs::Point convertToCartesianMsg(const gnsstk::Position& position);
  * \brief Convert the given position and velocity to ROS SatellitePosition message.
  * \param[in] xvt The position and velocity as determined by gnsstk.
  * \param[in] satcatId ID of the satellite in the satellite catalog.
+ * \param[in] posCov Position covariance to fill on the diagonal.
+ * \param[in] velCov Velocity covariance to fill on the diagonal.
  * \return The ROS SatellitePosition message corresponding to the given parameter.
  */
-gnss_info_msgs::SatellitePosition convert(const gnsstk::Xvt& xvt, uint32_t satcatId);
+gnss_info_msgs::SatellitePosition convert(const gnsstk::Xvt& xvt, uint32_t satcatId, double posCov, double velCov);
 
 }

@@ -79,3 +79,5 @@ A node turning `gnss_info_msgs/SkyView` into a plot of satellites.
   - https://www.gsc-europa.eu/sites/default/files/sites/all/files/UNP_UNUFN.txt
   - https://www.gsc-europa.eu/system-status/user-notifications-archived
 - Precise orbits from http://ftp.aiub.unibe.ch/CODE_MGEX/CODE/2023/ (ORB.SP3 files)
+  - `gnsstk/core/lib/GNSSEph/EphemerisRange.hpp`
+  - `gnsstk/core/lib/Geomatics/PreciseRange.cpp`
