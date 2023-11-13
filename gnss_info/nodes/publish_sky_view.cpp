@@ -24,7 +24,8 @@
 #include <unordered_set>
 
 #include <cras_cpp_common/node_utils.hpp>
-#include <gnss_info/ethz_satdb_provider.h>
+#include <gnss_info/ethz_satdb_datasource.h>
+#include <gnss_info/nav_library_orbital_data_provider.h>
 #include <gnss_info/orbital_data_manager.h>
 #include <gnss_info_msgs/Enums.h>
 #include <gnss_info_msgs/SatellitesList.h>
@@ -60,13 +61,14 @@ int main(int argc, char** argv)
         for (const auto& sat : list->satellites)
             infos[sat.satcat_id] = sat;
 
-        const auto provider = std::make_shared<gnss_info::EthzSatdbProvider>(infos);
+        const auto provider = std::make_shared<gnss_info::NavLibraryOrbitalDataProvider>();
         manager.addProvider(provider);
-        ROS_INFO("Added satellite metadata provider with %zu satellites.", list->satellites.size());
+        provider->addDataSource(std::make_shared<gnss_info::EthzSatdbDataSource>(infos));
+        ROS_INFO("Added satellite orbit data provider %s.", provider->getName().c_str());
 
-        ROS_INFO("Preloading data.");
-        manager.preload(ros::Time::now(), ros::Time::now() + ros::Duration::DAY);
-        ROS_INFO("Preloading data finished.");
+        ROS_INFO("Loading data.");
+        manager.load(ros::Time::now(), ros::Time::now() + ros::Duration::DAY);
+        ROS_INFO("Loading data finished.");
     };
     auto satSub = nh.subscribe<gnss_info_msgs::SatellitesList>("satellites", 1, satellitesCallback);
 

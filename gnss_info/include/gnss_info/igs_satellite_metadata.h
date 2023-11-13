@@ -7,7 +7,6 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 
 #include <cras_cpp_common/optional.hpp>
 #include <gnss_info_msgs/SatelliteInfo.h>
@@ -73,6 +72,8 @@ public:
      *        list will be returned.
      * \param[in] time The reference time (epoch).
      * \param[in] onlyActive If true, only active satellites will be returned.
+     * \param[in] onlyConstellations If set, only satellites from the given constellations will be returned.
+     * \param[in] onlySignals If set, only satellites transmitting the given signals will be returned.
      * \return Mapping Satcat ID => known valid satellite.
      */
     std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo> getSatellites(

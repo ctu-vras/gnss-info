@@ -37,7 +37,7 @@ struct OrbitalDataManagerPrivate
 std::list<std::shared_ptr<OrbitalDataProvider>> OrbitalDataManagerPrivate::getRelevantProviders(
     const ros::Time& time, const cras::optional<bool>& precise) const
 {
-    return this->getRelevantProviders(time, time + ros::Duration::MINUTE, precise);
+    return this->getRelevantProviders(time, time, precise);
 }
 
 std::list<std::shared_ptr<OrbitalDataProvider>> OrbitalDataManagerPrivate::getRelevantProviders(
@@ -46,9 +46,9 @@ std::list<std::shared_ptr<OrbitalDataProvider>> OrbitalDataManagerPrivate::getRe
     std::list<std::shared_ptr<OrbitalDataProvider>> result;
     for (const auto& provider : this->providers)
     {
-        if (precise.has_value() && precise && !provider->isPrecise())
+        if (precise.has_value() && *precise && !provider->isPrecise())
             continue;
-        if (precise.has_value() && !precise && !provider->isApproximate())
+        if (precise.has_value() && !*precise && !provider->isApproximate())
             continue;
         if (startTime > provider->getTimeRange().second)
             continue;
@@ -65,27 +65,32 @@ OrbitalDataManager::OrbitalDataManager() : data(new OrbitalDataManagerPrivate)
 
 OrbitalDataManager::~OrbitalDataManager() = default;
 
-bool OrbitalDataManager::preload(const ros::Time& time)
+bool OrbitalDataManager::load(const ros::Time& time)
 {
-    return this->preload(time, time + ros::Duration::MINUTE, cras::nullopt);
+    return this->load(time, cras::nullopt);
 }
 
-bool OrbitalDataManager::preload(const ros::Time& time, const cras::optional<bool>& precise)
+bool OrbitalDataManager::load(const ros::Time& time, const cras::optional<bool>& precise)
 {
-    return this->preload(time, time + ros::Duration::MINUTE, precise);
+    for (const auto& provider : this->data->getRelevantProviders(time, precise))
+    {
+        if (provider->load(time, precise))
+            return true;
+    }
+    return false;
 }
 
-bool OrbitalDataManager::preload(const ros::Time& startTime, const ros::Time& endTime)
+bool OrbitalDataManager::load(const ros::Time& startTime, const ros::Time& endTime)
 {
-    return this->preload(startTime, endTime, cras::nullopt);
+    return this->load(startTime, endTime, cras::nullopt);
 }
 
-bool OrbitalDataManager::preload(
+bool OrbitalDataManager::load(
     const ros::Time& startTime, const ros::Time& endTime, const cras::optional<bool>& precise)
 {
     for (const auto& provider : this->data->getRelevantProviders(startTime, endTime, precise))
     {
-        if (provider->preload(startTime, endTime))
+        if (provider->load(startTime, endTime, precise))
             return true;
     }
     return false;
@@ -100,7 +105,7 @@ cras::expected<gnss_info_msgs::SatellitesPositions, std::string> OrbitalDataMana
 cras::expected<gnss_info_msgs::SatellitesPositions, std::string> OrbitalDataManager::getPositions(
     const ros::Time& time, const gnss_info_msgs::SatellitesList& satellites, const cras::optional<bool>& precise)
 {
-    this->preload(time);
+    this->load(time, precise);
     const auto providers = this->data->getRelevantProviders(time, precise);
     if (providers.empty())
         return cras::make_unexpected("No satellite data was found");
@@ -144,7 +149,7 @@ cras::expected<gnss_info_msgs::SkyView, std::string> OrbitalDataManager::getSkyV
     const geographic_msgs::GeoPoint& position, const gnss_info_msgs::SatellitesPositions& positions,
     const double elevationMaskDeg, const cras::optional<bool>& precise)
 {
-    this->preload(positions.header.stamp);
+    this->load(positions.header.stamp, precise);
     const auto providers = this->data->getRelevantProviders(positions.header.stamp, precise);
     if (providers.empty())
         return cras::make_unexpected("No satellite data was found");
@@ -155,9 +160,7 @@ cras::expected<gnss_info_msgs::SkyView, std::string> OrbitalDataManager::getSkyV
 
     for (const auto& provider : providers)
     {
-        const auto maybeSkyView = provider->getSkyView(
-            positions.header.stamp, position, elevationMaskDeg, positionsMap);
-
+        const auto maybeSkyView = provider->getSkyView(position, positionsMap, elevationMaskDeg);
         if (!maybeSkyView.has_value())
         {
             ROS_DEBUG("Failed getting sky view from provider %s at time %s: %s",

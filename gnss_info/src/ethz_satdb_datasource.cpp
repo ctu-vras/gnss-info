@@ -23,10 +23,9 @@
 #include <cras_cpp_common/string_utils.hpp>
 #include <gnss_info/cache.h>
 #include <gnss_info/cache_index.h>
-#include <gnss_info/ethz_satdb_provider.h>
+#include <gnss_info/ethz_satdb_datasource.h>
 #include <gnss_info_msgs/Enums.h>
 #include <gnsstk_ros/constellations.h>
-#include <gnsstk_ros/position.h>
 #include <gnsstk_ros/time.h>
 #include <ros/ros.h>
 
@@ -276,17 +275,12 @@ std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo> TLENavDataFactory::s
 namespace gnss_info
 {
 
-struct EthzSatdbProviderPrivate
+struct EthzSatdbDataSourcePrivate
 {
     std::pair<ros::Time, ros::Time> timeRange;
     std::unordered_set<std::string> constellations;
-    std::unordered_map<std::string, std::string> nameToSatcat;
-    std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo> satelliteInfo;
-    gnsstk::NavDataFactoryPtr factory;
-    gnsstk::NavLibrary navLibrary;
-    std::unordered_set<DayIndex> preloadedDays;
+    std::unordered_set<DayIndex> loadedDays;
 
-    std::string ecefFrameId {"ecef"};
     std::string urlFormat {"https://satdb.ethz.ch/api/satellitedata/?object-name=%s&"
                            "start-datetime=%sT0000&end-datetime=%sT0000&before=3&after=3&"
                            "without-frequency-data=True"};
@@ -305,13 +299,13 @@ struct EthzSatdbProviderPrivate
     cras::expected<bool, std::string> download(const DayIndex& day);
 };
 
-fs::path EthzSatdbProviderPrivate::getCacheFile(const DayIndex& day) const
+fs::path EthzSatdbDataSourcePrivate::getCacheFile(const DayIndex& day) const
 {
     const auto filename = cras::format("ethz_satdb_%04u%02u%02u.tle", day.year, day.month, day.day);
     return this->cacheDir / filename;
 }
 
-cras::expected<bool, std::string> EthzSatdbProviderPrivate::download(const DayIndex& day)
+cras::expected<bool, std::string> EthzSatdbDataSourcePrivate::download(const DayIndex& day)
 {
     const auto startDate = cras::format("%04u%02u%02u", day.year, day.month, day.day);
     const DayIndex endDay(static_cast<ros::Time>(day) + ros::Duration::DAY);
@@ -365,10 +359,10 @@ cras::expected<bool, std::string> EthzSatdbProviderPrivate::download(const DayIn
     return true;
 }
 
-EthzSatdbProvider::EthzSatdbProvider(const std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo>& satelliteInfo) :
-    data(new EthzSatdbProviderPrivate)
+EthzSatdbDataSource::EthzSatdbDataSource(
+    const std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo>& satelliteInfo) :
+        data(new EthzSatdbDataSourcePrivate)
 {
-    this->data->satelliteInfo = satelliteInfo;
     this->data->timeRange = std::make_pair(static_cast<ros::Time>(DayIndex(2023, 2, 10)), ros::Time::MAX);
 
     this->data->constellations =
@@ -389,25 +383,26 @@ EthzSatdbProvider::EthzSatdbProvider(const std::unordered_map<uint32_t, gnss_inf
         gnsstk::MultiFormatNavDataFactory::addFactory(factory);
         registered = true;
     }
-    this->data->factory = std::make_shared<gnsstk::MultiFormatNavDataFactory>();
-    this->data->navLibrary.addFactory(this->data->factory);
 }
 
-EthzSatdbProvider::~EthzSatdbProvider()
-{
-}
+EthzSatdbDataSource::~EthzSatdbDataSource() = default;
 
-std::pair<ros::Time, ros::Time> EthzSatdbProvider::getTimeRange() const
+std::pair<ros::Time, ros::Time> EthzSatdbDataSource::getTimeRange() const
 {
     return this->data->timeRange;
 }
 
-std::unordered_set<std::string> EthzSatdbProvider::getConstellations() const
+std::unordered_set<std::string> EthzSatdbDataSource::getConstellations() const
 {
     return this->data->constellations;
 }
 
-bool EthzSatdbProvider::preload(const ros::Time& startTime, const ros::Time& endTime)
+bool EthzSatdbDataSource::load(const ros::Time& time, const DataSourceLoadCb& cb)
+{
+    return this->load(time, time + ros::Duration::DAY, cb);
+}
+
+bool EthzSatdbDataSource::load(const ros::Time& startTime, const ros::Time& endTime, const DataSourceLoadCb& cb)
 {
     auto endTime2 = endTime;
     if (endTime == ros::Time::MAX || (endTime - startTime) < ros::Duration::DAY)
@@ -416,7 +411,7 @@ bool EthzSatdbProvider::preload(const ros::Time& startTime, const ros::Time& end
     std::list<DayIndex> days;
     for (auto time = startTime; time <= endTime2; time += ros::Duration::DAY)
         days.emplace_back(time);
-    days.remove_if([this](const auto& day) {return this->data->preloadedDays.count(day) > 0;});
+    days.remove_if([this](const auto& day) {return this->data->loadedDays.count(day) > 0;});
 
     if (days.empty())
         return true;
@@ -472,116 +467,29 @@ bool EthzSatdbProvider::preload(const ros::Time& startTime, const ros::Time& end
             }
         }
 
-        if (!this->data->factory->addDataSource(file.string()))
+        if (!cb(file.string()))
         {
             ROS_ERROR("Error processing TLE data file %s.", file.c_str());
             hadError = true;
             continue;
         }
 
-        this->data->preloadedDays.insert(day);
+        this->data->loadedDays.insert(day);
     }
     return hadError;
 }
 
-cras::expected<std::unordered_map<uint32_t, gnss_info_msgs::SatellitePosition>, std::string>
-EthzSatdbProvider::getECEFPositions(
-    const ros::Time& time, const std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo>& satellites)
-{
-    const auto when = gnsstk_ros::convert(time);
-
-    auto when1 = when, when2 = when;
-    when1.addSeconds(-ros::Duration::DAY.sec * 3.0);
-    when2.addSeconds(ros::Duration::DAY.sec * 3.0);
-    const auto availableSats = this->data->navLibrary.getAvailableSats(when1, when2);
-    if (availableSats.empty())
-        return cras::make_unexpected("No matching satellite data found.");
-
-    std::unordered_map<uint32_t, gnss_info_msgs::SatellitePosition> positions;
-    if (satellites.empty())
-        return positions;
-
-    // Error of TLE positions is in the order of a few kilometers.
-    const auto posCov = std::pow(2000.0, 2);
-    const auto velCov = std::pow(1.0, 2);
-
-    std::list<std::string> errors;
-    for (const auto& [satcatID, info] : satellites)
-    {
-        const auto maybeSatID = gnsstk_ros::satelliteInfoToSatID(info);
-        if (!maybeSatID.has_value())
-        {
-            errors.push_back(cras::format("Failed to determine PRN of satellite %u (%s) at time %s.",
-                satcatID, info.name.c_str(), cras::to_string(time).c_str()));
-            continue;
-        }
-
-        const gnsstk::NavSatelliteID navId{*maybeSatID};
-        if (availableSats.find(navId) == availableSats.cend())
-            continue;
-
-        gnsstk::Xvt xvt;
-        const auto success = this->data->navLibrary.getXvt(navId, when, xvt,
-            gnsstk::SVHealth::Any, gnsstk::NavValidityType::ValidOnly, gnsstk::NavSearchOrder::Nearest);
-
-        if (!success)
-        {
-            errors.push_back(cras::format("Failed to compute ECEF position of satellite %u (%s) at time %s.",
-                satcatID, info.name.c_str(), cras::to_string(time).c_str()));
-            continue;
-        }
-        positions[satcatID] = gnsstk_ros::convert(xvt, satcatID, posCov, velCov);
-    }
-
-    if (!errors.empty() && positions.empty())
-        return cras::make_unexpected(cras::join(errors, " "));
-    if (positions.empty())
-        return cras::make_unexpected("No matching satellite data found.");
-    if (!errors.empty())
-        ROS_WARN("%s", cras::join(errors, " ").c_str());
-
-    return positions;
-}
-
-cras::expected<std::unordered_map<uint32_t, gnss_info_msgs::SatelliteSkyPosition>, std::string>
-EthzSatdbProvider::getSkyView(
-    const ros::Time& time, const geographic_msgs::GeoPoint& receiverPosition, const double elevationMaskDeg,
-    const std::unordered_map<uint32_t, gnss_info_msgs::SatellitePosition>& satelliteECEFPositions)
-{
-    gnsstk::Position recPos = gnsstk_ros::convert(receiverPosition);
-    // all following computations use Cartesian internally
-    recPos.transformTo(gnsstk::Position::CoordinateSystem::Cartesian);
-
-    std::unordered_map<uint32_t, gnss_info_msgs::SatelliteSkyPosition> skyView;
-    for (const auto& [satcatID, ecefPose] : satelliteECEFPositions)
-    {
-        const gnsstk::Position satPos = gnsstk_ros::convert(ecefPose.position);
-        const auto elDeg = recPos.elevation(satPos);
-        if (elDeg < elevationMaskDeg)
-            continue;
-        const auto azDeg = recPos.azimuth(satPos);
-        const auto distance = gnsstk::range(recPos, satPos);
-        auto& position = skyView[satcatID];
-        position.satcat_id = satcatID;
-        position.azimuth_deg = azDeg;
-        position.elevation_deg = elDeg;
-        position.distance = distance;
-    }
-
-    return skyView;
-}
-
-bool EthzSatdbProvider::isPrecise() const
+bool EthzSatdbDataSource::isPrecise() const
 {
     return false;
 }
 
-bool EthzSatdbProvider::isApproximate() const
+bool EthzSatdbDataSource::isApproximate() const
 {
     return true;
 }
 
-std::string EthzSatdbProvider::getName() const
+std::string EthzSatdbDataSource::getName() const
 {
     return "ETH Zurich Satellite DB";
 }
