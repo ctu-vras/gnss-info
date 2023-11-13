@@ -33,7 +33,7 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${YAML_CPP_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME}_common src/cache.cpp)
+add_library(${PROJECT_NAME}_common src/cache.cpp src/cache_index.cpp)
 add_dependencies(${PROJECT_NAME}_common ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_common PUBLIC ${catkin_LIBRARIES} PRIVATE ${CURL_LIBRARIES} std::filesystem)
 

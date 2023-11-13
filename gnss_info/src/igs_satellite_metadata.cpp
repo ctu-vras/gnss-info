@@ -248,7 +248,7 @@ struct SatelliteFrequencyChannel : gnsstk::Sinex::DataType
 };
 const std::string SatelliteFrequencyChannel::BLOCK_TITLE {"SATELLITE/FREQUENCY_CHANNEL"};  // NOLINT(runtime/string)
 
-struct IgnoredBlock : public gnsstk::Sinex::DataType
+struct IgnoredBlock : gnsstk::Sinex::DataType
 {
     static const std::string BLOCK_TITLE;
 
