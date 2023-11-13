@@ -59,7 +59,8 @@ cras::expected<std::stringstream, std::string> download(const std::string& url,
     std::stringstream readBuffer;
     const auto curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1u);
-    curlOptions(curl);  // Set extra config options.
+    if (curlOptions)
+        curlOptions(curl);  // Set extra config options.
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
