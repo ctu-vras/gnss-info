@@ -8,8 +8,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
-
-#include <boost/filesystem.hpp>
+#include CXX_FILESYSTEM_INCLUDE
 
 #include <gnsstk/FFData.hpp>
 #include <gnsstk/SinexStream.hpp>  // Has to be before SinexData include
@@ -29,6 +28,8 @@
 #include <gnsstk_ros/time.h>
 #include <ros/ros.h>
 #include <ros/package.h>
+
+namespace fs = CXX_FILESYSTEM_NAMESPACE;
 
 namespace gnss_info
 {
@@ -443,9 +444,9 @@ bool IGSSatelliteMetadataPrivate::loadSignals()
 
     for (const auto& d : cras::split(dir, ":"))
     {
-        for (boost::filesystem::directory_iterator it(d); it != boost::filesystem::directory_iterator(); ++it)
+        for (fs::directory_iterator it(d); it != fs::directory_iterator(); ++it)
         {
-            if (!boost::filesystem::is_regular_file(*it))
+            if (!fs::is_regular_file(*it))
                 continue;
             const auto path = it->path().string();
             if (!cras::endsWith(path, ".yaml"))
@@ -539,13 +540,27 @@ void IGSSatelliteMetadata::setCacheValidity(const ros::WallDuration& validity)
 
 bool IGSSatelliteMetadata::load()
 {
-    const auto oldestValidCache = static_cast<time_t>((ros::WallTime::now() - this->data->cacheValidity).sec);
-    if (!boost::filesystem::exists(this->data->cacheFile) ||
-        oldestValidCache > boost::filesystem::last_write_time(this->data->cacheFile))
+    bool shouldDownload {false};
+    if (!fs::exists(this->data->cacheFile))
     {
-        if (!this->data->downloadMetadata())
-            return false;
+        shouldDownload = true;
     }
+    else
+    {
+#if CXX_FILESYSTEM_IS_BOOST
+        auto fileTime = fs::last_write_time(this->data->cacheFile);
+        const auto oldestValidCache = static_cast<time_t>((ros::WallTime::now() - this->data->cacheValidity).sec);
+#else
+        auto fileTime = fs::last_write_time(this->data->cacheFile);
+        const auto oldestValidCache =
+            decltype(fileTime)::clock::now() - std::chrono::duration<long double>(this->data->cacheValidity.sec);
+#endif
+        if (oldestValidCache > fileTime)
+            shouldDownload = true;
+    }
+
+    if (shouldDownload && !this->data->downloadMetadata())
+        return false;
 
     IgsSinexData igsSinexData;
     try

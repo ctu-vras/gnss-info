@@ -9,8 +9,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include CXX_FILESYSTEM_INCLUDE
 
-#include <boost/filesystem.hpp>
 #include <gnsstk/MultiFormatNavDataFactory.hpp>
 #include <gnsstk/NavDataFactoryStoreCallback.hpp>
 #include <gnsstk/NavDataFactoryWithStoreFile.hpp>
@@ -31,6 +31,8 @@
 #include <ros/ros.h>
 
 #include "tle.h"  // NOLINT
+
+namespace fs = CXX_FILESYSTEM_NAMESPACE;
 
 namespace gnss_info
 {
@@ -340,7 +342,7 @@ struct EthzSatdbProviderPrivate
                            "without-frequency-data=True"};
 
     size_t maxDownloadDays {1000u};
-    boost::filesystem::path cacheDir;
+    fs::path cacheDir;
 
     std::unordered_map<std::string, std::string> satdbConstellations {
         {gnss_info_msgs::Enums::CONSTELLATION_GPS, "NAVSTAR"},
@@ -349,11 +351,11 @@ struct EthzSatdbProviderPrivate
         {gnss_info_msgs::Enums::CONSTELLATION_GLONASS, "COSMOS"}
     };
 
-    boost::filesystem::path getCacheFile(const DayIndex& day) const;
+    fs::path getCacheFile(const DayIndex& day) const;
     cras::expected<bool, std::string> download(const DayIndex& day);
 };
 
-boost::filesystem::path EthzSatdbProviderPrivate::getCacheFile(const DayIndex& day) const
+fs::path EthzSatdbProviderPrivate::getCacheFile(const DayIndex& day) const
 {
     const auto filename = cras::format("ethz_satdb_%04u%02u%02u.tle", day.year, day.month, day.day);
     return this->cacheDir / filename;
@@ -366,7 +368,7 @@ cras::expected<bool, std::string> EthzSatdbProviderPrivate::download(const DayIn
     const auto endDate = cras::format("%04u%02u%02u", endDay.year, endDay.month, endDay.day);
 
     const auto cacheFile = this->getCacheFile(day);
-    if (boost::filesystem::exists(cacheFile))
+    if (fs::exists(cacheFile))
         return true;
 
     std::stringstream ss;
@@ -480,7 +482,7 @@ bool EthzSatdbProvider::preload(const ros::Time& startTime, const ros::Time& end
     for (const auto& day : days)
     {
         const auto file = this->data->getCacheFile(day);
-        if (!boost::filesystem::exists(file))
+        if (!fs::exists(file))
             numToDownload++;
     }
 
@@ -509,7 +511,7 @@ bool EthzSatdbProvider::preload(const ros::Time& startTime, const ros::Time& end
     for (const auto& day : days)
     {
         const auto file = this->data->getCacheFile(day);
-        if (!boost::filesystem::exists(file))
+        if (!fs::exists(file))
         {
             const auto maybeDownloaded = this->data->download(day);
             if (!maybeDownloaded.has_value())

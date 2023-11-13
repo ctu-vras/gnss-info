@@ -18,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(CURL REQUIRED)
 find_package(Eigen3 REQUIRED)
+# Provided by cras_cpp_common, produces std::filesystem target using the newest possible implementation
+find_package(Filesystem REQUIRED COMPONENTS Final Experimental Boost)
 find_package(GNSSTK REQUIRED)
 find_package(jsoncpp REQUIRED)
 find_package(YAML-CPP REQUIRED)
@@ -33,15 +35,18 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${YAML_C
 
 add_library(${PROJECT_NAME}_common src/common.cpp)
 add_dependencies(${PROJECT_NAME}_common ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(${PROJECT_NAME}_common PUBLIC ${catkin_LIBRARIES} PRIVATE ${CURL_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_common PUBLIC ${catkin_LIBRARIES} PRIVATE ${CURL_LIBRARIES} std::filesystem)
 
 add_library(satellite_metadata src/igs_satellite_metadata.cpp)
 add_dependencies(satellite_metadata ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(satellite_metadata PUBLIC ${catkin_LIBRARIES} PRIVATE ${PROJECT_NAME}_common gnsstk ${YAML_CPP_LIBRARIES})
+target_link_libraries(satellite_metadata PUBLIC ${catkin_LIBRARIES} PRIVATE ${PROJECT_NAME}_common gnsstk std::filesystem ${YAML_CPP_LIBRARIES})
+if (CXX_FILESYSTEM_TYPE STREQUAL "Boost")
+  add_compile_definitions(satellite_metadata PRIVATE -DCXX_FILESYSTEM_IS_BOOST=1)
+endif()
 
 add_library(orbital_data src/ethz_satdb_provider.cpp src/orbital_data_manager.cpp src/tle.c)
 add_dependencies(orbital_data ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(orbital_data PUBLIC ${catkin_LIBRARIES} PRIVATE Eigen3::Eigen ${PROJECT_NAME}_common gnsstk jsoncpp_lib satellite_metadata)
+target_link_libraries(orbital_data PUBLIC ${catkin_LIBRARIES} PRIVATE Eigen3::Eigen ${PROJECT_NAME}_common gnsstk jsoncpp_lib satellite_metadata std::filesystem)
 
 add_executable(publish_all_satellites nodes/publish_all_satellites.cpp)
 target_link_libraries(publish_all_satellites satellite_metadata)

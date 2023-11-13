@@ -4,13 +4,15 @@
 #include <cstdlib>
 #include <sstream>
 #include <string>
+#include CXX_FILESYSTEM_INCLUDE
 
-#include <boost/filesystem.hpp>
 #include <curl/curl.h>
 
 #include <cras_cpp_common/expected.hpp>
 #include <cras_cpp_common/string_utils.hpp>
 #include <gnss_info/common.h>
+
+namespace fs = CXX_FILESYSTEM_NAMESPACE;
 
 namespace gnss_info
 {
@@ -39,8 +41,8 @@ std::string getCacheDir()
         cacheDir += "/gnss_info";
     }
 
-    if (!boost::filesystem::is_directory(cacheDir))
-        boost::filesystem::create_directories(cacheDir.c_str());
+    if (!fs::is_directory(cacheDir))
+        fs::create_directories(cacheDir);
 
     return cacheDir;
 }
