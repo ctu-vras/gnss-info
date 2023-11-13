@@ -31,15 +31,17 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${YAML_CPP_INCLUDE_DIRS})
 
+add_library(${PROJECT_NAME}_common src/common.cpp)
+add_dependencies(${PROJECT_NAME}_common ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_common PUBLIC ${catkin_LIBRARIES} PRIVATE ${CURL_LIBRARIES})
+
 add_library(satellite_metadata src/igs_satellite_metadata.cpp)
 add_dependencies(satellite_metadata ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(satellite_metadata PUBLIC ${catkin_LIBRARIES} PRIVATE ${CURL_LIBRARIES} gnsstk ${YAML_CPP_LIBRARIES})
+target_link_libraries(satellite_metadata PUBLIC ${catkin_LIBRARIES} PRIVATE ${PROJECT_NAME}_common gnsstk ${YAML_CPP_LIBRARIES})
 
-add_library(tle_reader src/tle.c)
-
-add_library(orbital_data src/ethz_satdb_provider.cpp src/orbital_data_manager.cpp)
+add_library(orbital_data src/ethz_satdb_provider.cpp src/orbital_data_manager.cpp src/tle.c)
 add_dependencies(orbital_data ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(orbital_data PUBLIC ${catkin_LIBRARIES} PRIVATE ${CURL_LIBRARIES} Eigen3::Eigen gnsstk jsoncpp_lib satellite_metadata tle_reader)
+target_link_libraries(orbital_data PUBLIC ${catkin_LIBRARIES} PRIVATE Eigen3::Eigen ${PROJECT_NAME}_common gnsstk jsoncpp_lib satellite_metadata)
 
 add_executable(publish_all_satellites nodes/publish_all_satellites.cpp)
 target_link_libraries(publish_all_satellites satellite_metadata)
@@ -51,7 +53,7 @@ install(TARGETS publish_all_satellites publish_sky_view
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(TARGETS orbital_data satellite_metadata tle_reader
+install(TARGETS ${PROJECT_NAME}_common orbital_data satellite_metadata
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}

@@ -11,7 +11,6 @@
 
 #include <boost/filesystem.hpp>
 
-#include <curl/curl.h>
 #include <gnsstk/FFData.hpp>
 #include <gnsstk/SinexStream.hpp>  // Has to be before SinexData include
 #include <gnsstk/SinexData.hpp>
@@ -22,6 +21,7 @@
 
 #include <cras_cpp_common/optional.hpp>
 #include <cras_cpp_common/string_utils.hpp>
+#include <gnss_info/common.h>
 #include <gnss_info/igs_satellite_metadata.h>
 #include <gnss_info_msgs/Enums.h>
 #include <gnss_info_msgs/SatelliteInfo.h>
@@ -395,28 +395,15 @@ struct IGSSatelliteMetadataPrivate
 
 bool IGSSatelliteMetadataPrivate::downloadMetadata() const
 {
-    const auto curlCallback = +[](void *contents, size_t size, size_t nmemb, void *userp)
-    {
-        *static_cast<std::stringstream*>(userp) << std::string(static_cast<char*>(contents), size * nmemb);
-        return size * nmemb;
-    };
-
-    std::stringstream readBuffer;
     ROS_INFO("Downloading satellite metadata from %s.", this->url.c_str());
-    const auto curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, this->url.c_str());
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1u);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-    const auto res = curl_easy_perform(curl);
-    curl_easy_cleanup(curl);
-
-    if (res != CURLE_OK)
+    auto maybeReadBuffer = download(this->url);
+    if (!maybeReadBuffer.has_value())
     {
-        ROS_ERROR("Error downloading %s: %s\n", this->url.c_str(), curl_easy_strerror(res));
+        ROS_ERROR("%s", maybeReadBuffer.error().c_str());
         return false;
     }
 
+    auto& readBuffer = *maybeReadBuffer;
     std::ofstream outFile(this->cacheFile.c_str());
     for (std::string line; std::getline(readBuffer, line);)
     {
@@ -525,32 +512,7 @@ bool IGSSatelliteMetadataPrivate::loadSignals()
 
 IGSSatelliteMetadata::IGSSatelliteMetadata() : data(new IGSSatelliteMetadataPrivate)
 {
-    std::string cacheDir;
-    const auto envDir = std::getenv("GNSS_INFO_CACHE_DIR");
-    if (envDir != nullptr)
-    {
-        cacheDir = envDir;
-    }
-    else
-    {
-#ifdef _WIN32
-        const std::string homeDirEnv {"USERPROFILE"};
-#else
-        const std::string homeDirEnv{"HOME"};
-#endif
-
-        const auto cacheEnv = std::getenv("XDG_CACHE_HOME");
-        if (cacheEnv != nullptr)
-            cacheDir = cacheEnv;
-        else
-            cacheDir = std::string(std::getenv(homeDirEnv.c_str())) + "/.cache";
-        cacheDir += "/gnss_info";
-    }
-
-    if (!boost::filesystem::is_directory(cacheDir))
-        boost::filesystem::create_directories(cacheDir.c_str());
-
-    this->data->cacheFile = cacheDir + "/igs_satellite_metadata.snx";
+    this->data->cacheFile = getCacheDir() + "/igs_satellite_metadata.snx";
 
     this->data->url = "https://files.igs.org/pub/station/general/igs_satellite_metadata.snx";
     const auto envUrl = std::getenv("GNSS_INFO_IGS_METADATA_URL");

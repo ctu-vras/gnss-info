@@ -11,7 +11,6 @@
 #include <vector>
 
 #include <boost/filesystem.hpp>
-#include <curl/curl.h>
 #include <gnsstk/MultiFormatNavDataFactory.hpp>
 #include <gnsstk/NavDataFactoryStoreCallback.hpp>
 #include <gnsstk/NavDataFactoryWithStoreFile.hpp>
@@ -22,6 +21,7 @@
 
 #include <cras_cpp_common/expected.hpp>
 #include <cras_cpp_common/string_utils.hpp>
+#include <gnss_info/common.h>
 #include <gnss_info/ethz_satdb_provider.h>
 #include <gnss_info/igs_satellite_metadata.h>
 #include <gnss_info_msgs/Enums.h>
@@ -373,27 +373,14 @@ cras::expected<bool, std::string> EthzSatdbProviderPrivate::download(const DayIn
     size_t numSatellites {0u};
     for (const auto& [constallation, prefix] : this->satdbConstellations)
     {
-        const auto curlCallback = +[](void *contents, size_t size, size_t nmemb, void *userp)
-        {
-            *static_cast<std::stringstream*>(userp) << std::string(static_cast<char*>(contents), size * nmemb);
-            return size * nmemb;
-        };
-
-        std::stringstream readBuffer;
         const auto url = cras::format(this->urlFormat, prefix.c_str(), startDate.c_str(), endDate.c_str());
-        const auto curl = curl_easy_init();
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1u);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
         ROS_INFO("Downloading orbits from %s.", url.c_str());
-        const auto res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
+        auto maybeReadBuffer = gnss_info::download(url);
 
-        if (res != CURLE_OK)
-            return cras::make_unexpected(
-                cras::format("Error downloading %s: %s", url.c_str(), curl_easy_strerror(res)));
+        if (!maybeReadBuffer.has_value())
+            return cras::make_unexpected(maybeReadBuffer.error());
 
+        auto& readBuffer = *maybeReadBuffer;
         Json::Value root;
         Json::Reader reader;
         if (!reader.parse(readBuffer, root))
@@ -440,32 +427,7 @@ EthzSatdbProvider::EthzSatdbProvider(const std::unordered_map<uint32_t, gnss_inf
         gnss_info_msgs::Enums::CONSTELLATION_BEIDOU,
     };
 
-    std::string cacheDir;
-    const auto envDir = std::getenv("GNSS_INFO_CACHE_DIR");
-    if (envDir != nullptr)
-    {
-        cacheDir = envDir;
-    }
-    else
-    {
-#ifdef _WIN32
-        const std::string homeDirEnv {"USERPROFILE"};
-#else
-        const std::string homeDirEnv{"HOME"};
-#endif
-
-        const auto cacheEnv = std::getenv("XDG_CACHE_HOME");
-        if (cacheEnv != nullptr)
-            cacheDir = cacheEnv;
-        else
-            cacheDir = std::string(std::getenv(homeDirEnv.c_str())) + "/.cache";
-        cacheDir += "/gnss_info";
-    }
-
-    if (!boost::filesystem::is_directory(cacheDir))
-        boost::filesystem::create_directories(cacheDir.c_str());
-
-    this->data->cacheDir = cacheDir;
+    this->data->cacheDir = getCacheDir();
 
     gnsstk::TLENavDataFactory::addSatelliteInfo(satelliteInfo);
     static auto registered {false};
