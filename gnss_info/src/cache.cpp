@@ -10,7 +10,7 @@
 
 #include <cras_cpp_common/expected.hpp>
 #include <cras_cpp_common/string_utils.hpp>
-#include <gnss_info/common.h>
+#include <gnss_info/cache.h>
 
 namespace fs = CXX_FILESYSTEM_NAMESPACE;
 

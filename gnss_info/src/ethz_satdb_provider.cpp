@@ -21,7 +21,7 @@
 
 #include <cras_cpp_common/expected.hpp>
 #include <cras_cpp_common/string_utils.hpp>
-#include <gnss_info/common.h>
+#include <gnss_info/cache.h>
 #include <gnss_info/ethz_satdb_provider.h>
 #include <gnss_info_msgs/Enums.h>
 #include <gnsstk_ros/constellations.h>
