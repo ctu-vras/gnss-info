@@ -73,4 +73,24 @@ cras::expected<std::stringstream, std::string> download(const std::string& url,
     return readBuffer;
 }
 
+bool isCacheFileValid(const std::string& file)
+{
+    return fs::exists(file);
+}
+
+bool isCacheFileValid(const std::string& file, const ros::WallDuration& validity)
+{
+    if (!isCacheFileValid(file))
+        return false;
+
+#if CXX_FILESYSTEM_IS_BOOST
+    auto fileTime = fs::last_write_time(this->data->cacheFile);
+    const auto oldestValidCache = static_cast<time_t>((ros::WallTime::now() - this->data->cacheValidity).sec);
+#else
+    auto fileTime = fs::last_write_time(file);
+    const auto oldestValidCache = decltype(fileTime)::clock::now() - std::chrono::duration<long double>(validity.sec);
+#endif
+    return oldestValidCache <= fileTime;
+}
+
 }

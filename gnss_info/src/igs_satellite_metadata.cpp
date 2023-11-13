@@ -540,26 +540,7 @@ void IGSSatelliteMetadata::setCacheValidity(const ros::WallDuration& validity)
 
 bool IGSSatelliteMetadata::load()
 {
-    bool shouldDownload {false};
-    if (!fs::exists(this->data->cacheFile))
-    {
-        shouldDownload = true;
-    }
-    else
-    {
-#if CXX_FILESYSTEM_IS_BOOST
-        auto fileTime = fs::last_write_time(this->data->cacheFile);
-        const auto oldestValidCache = static_cast<time_t>((ros::WallTime::now() - this->data->cacheValidity).sec);
-#else
-        auto fileTime = fs::last_write_time(this->data->cacheFile);
-        const auto oldestValidCache =
-            decltype(fileTime)::clock::now() - std::chrono::duration<long double>(this->data->cacheValidity.sec);
-#endif
-        if (oldestValidCache > fileTime)
-            shouldDownload = true;
-    }
-
-    if (shouldDownload && !this->data->downloadMetadata())
+    if (!isCacheFileValid(this->data->cacheFile, this->data->cacheValidity) && !this->data->downloadMetadata())
         return false;
 
     IgsSinexData igsSinexData;

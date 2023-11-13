@@ -23,7 +23,6 @@
 #include <cras_cpp_common/string_utils.hpp>
 #include <gnss_info/common.h>
 #include <gnss_info/ethz_satdb_provider.h>
-#include <gnss_info/igs_satellite_metadata.h>
 #include <gnss_info_msgs/Enums.h>
 #include <gnsstk_ros/constellations.h>
 #include <gnsstk_ros/position.h>
@@ -368,7 +367,7 @@ cras::expected<bool, std::string> EthzSatdbProviderPrivate::download(const DayIn
     const auto endDate = cras::format("%04u%02u%02u", endDay.year, endDay.month, endDay.day);
 
     const auto cacheFile = this->getCacheFile(day);
-    if (fs::exists(cacheFile))
+    if (isCacheFileValid(cacheFile))
         return true;
 
     std::stringstream ss;
@@ -482,7 +481,7 @@ bool EthzSatdbProvider::preload(const ros::Time& startTime, const ros::Time& end
     for (const auto& day : days)
     {
         const auto file = this->data->getCacheFile(day);
-        if (!fs::exists(file))
+        if (!isCacheFileValid(file))
             numToDownload++;
     }
 
@@ -511,7 +510,7 @@ bool EthzSatdbProvider::preload(const ros::Time& startTime, const ros::Time& end
     for (const auto& day : days)
     {
         const auto file = this->data->getCacheFile(day);
-        if (!fs::exists(file))
+        if (!isCacheFileValid(file))
         {
             const auto maybeDownloaded = this->data->download(day);
             if (!maybeDownloaded.has_value())

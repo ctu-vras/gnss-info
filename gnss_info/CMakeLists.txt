@@ -46,7 +46,7 @@ endif()
 
 add_library(orbital_data src/ethz_satdb_provider.cpp src/orbital_data_manager.cpp src/tle.c)
 add_dependencies(orbital_data ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(orbital_data PUBLIC ${catkin_LIBRARIES} PRIVATE Eigen3::Eigen ${PROJECT_NAME}_common gnsstk jsoncpp_lib satellite_metadata std::filesystem)
+target_link_libraries(orbital_data PUBLIC ${catkin_LIBRARIES} PRIVATE Eigen3::Eigen ${PROJECT_NAME}_common gnsstk jsoncpp_lib std::filesystem)
 
 add_executable(publish_all_satellites nodes/publish_all_satellites.cpp)
 target_link_libraries(publish_all_satellites satellite_metadata)
