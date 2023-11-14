@@ -27,7 +27,7 @@ find_package(YAML-CPP REQUIRED)
 #catkin_lint: ignore_once literal_project_name
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES satellite_metadata tle_reader
+  LIBRARIES orbital_data satellite_metadata
   CATKIN_DEPENDS geographic_msgs gnss_info_msgs roscpp
 )
 
