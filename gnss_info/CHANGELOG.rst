@@ -2,8 +2,8 @@
 Changelog for package gnss_info
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.1 (2023-11-14)
+------------------
 * Added support for plotting GPSFix messages.
 * Added tests.
 * Refactored out NavLibraryOrbitalDataProvider.
