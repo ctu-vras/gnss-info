@@ -476,7 +476,7 @@ bool EthzSatdbDataSource::load(const ros::Time& startTime, const ros::Time& endT
 
         this->data->loadedDays.insert(day);
     }
-    return hadError;
+    return !hadError;
 }
 
 bool EthzSatdbDataSource::isPrecise() const
