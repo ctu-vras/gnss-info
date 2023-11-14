@@ -34,6 +34,7 @@ SPDX-FileCopyrightText: Czech Technical University in Prague
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>gnsstk</exec_depend>
   <exec_depend>gnsstk_ros</exec_depend>
+  <exec_depend>gps_common</exec_depend>
   <exec_depend>libcurl</exec_depend>
   <exec_depend>libjsoncpp</exec_depend>
   <exec_depend>python3-matplotlib</exec_depend>

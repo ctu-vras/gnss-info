@@ -3,6 +3,21 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # SPDX-FileCopyrightText: Czech Technical University in Prague
 
+"""
+Visualization node for sky views.
+
+This node visualizes a sky view received on either of two topics:
+- `sky_view` (type `gnss_info_msgs/SkyView`)
+- `fix` (type `gps_common/GPSFix`)
+
+The SkyView topic should also be accompanied by topic `satellites` (`gnss_info_msgs/SatellitesList`) to decode
+which satellite belongs to what constellation.
+
+The sky plot is published as `sensor_msgs/Image` on topic `sky_plot`.
+
+For parameters of the node, see the bottom of this script.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import rospy
@@ -12,7 +27,9 @@ from datetime import datetime
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-from gnss_info_msgs.msg import SatellitesList, SkyView
+from geographic_msgs.msg import GeoPoint
+from gnss_info_msgs.msg import SatelliteInfo, SatelliteSkyPosition, SatellitesList, SkyView
+from gps_common.msg import GPSFix
 from sensor_msgs.msg import Image
 
 satlist = None
@@ -62,6 +79,51 @@ def on_sky_view(msg):
                 satellites[constellation] = []
             satellites[constellation].append(sat)
 
+    sky_plot(satellites, msg.header, msg.reference_position, msg.elevation_mask_deg)
+
+
+def on_gps_fix(msg):
+    """
+    :param GPSFix msg:
+    """
+
+    ax.cla()
+    fig.patch.set_facecolor(plot_color)
+    ax.set_facecolor(plot_color)
+
+    satellites = {
+        "Used": [],
+        "Unused": [],
+    }
+    global satlist
+    satlist = dict()
+    used_i = 0
+    for i in range(msg.status.satellites_visible):
+        prn = msg.status.satellite_visible_prn[i]
+        is_used = used_i < len(msg.status.satellite_used_prn) and msg.status.satellite_used_prn[used_i] == prn
+        if is_used:
+            used_i += 1
+        satlist_idx = 1000 * i + prn
+        sat = SatelliteSkyPosition()
+        sat.satcat_id = satlist_idx
+        sat.azimuth_deg = msg.status.satellite_visible_azimuth[i]
+        sat.elevation_deg = msg.status.satellite_visible_z[i]
+        satellites["Used" if is_used else "Unused"].append(sat)
+        satlist[satlist_idx] = SatelliteInfo()
+        satlist[satlist_idx].stamp = msg.header.stamp
+        satlist[satlist_idx].prn = prn
+        satlist[satlist_idx].satcat_id = satlist_idx
+        satlist[satlist_idx].active = True
+        satlist[satlist_idx].name = str(prn)
+
+    ref_pos = GeoPoint()
+    ref_pos.latitude = msg.latitude
+    ref_pos.longitude = msg.longitude
+    ref_pos.altitude = msg.altitude
+    sky_plot(satellites, msg.header, ref_pos, 0.0)
+
+
+def sky_plot(satellites, header, reference_position, elevation_mask_deg=0.0):
     for constellation in satellites:
         # Azimuth MUST be given to plot() in radians.
         azimuths = np.array([s.azimuth_deg * np.pi / 180.0 for s in satellites[constellation]])
@@ -80,9 +142,8 @@ def on_sky_view(msg):
             for (i, s) in enumerate(satellites[constellation]):
                 ax.annotate(satlist[s.satcat_id].prn, (az_data[i], elev_data[i]), fontsize='small', color='gray')
 
-    if show_elevation_mask:
-        ax.fill_between(np.linspace(0, 2*np.pi, 100), 90, 90 - msg.elevation_mask_deg,
-                        color='gray', zorder=0, alpha=0.5)
+    if show_elevation_mask and elevation_mask_deg > 0:
+        ax.fill_between(np.linspace(0, 2*np.pi, 100), 90, 90 - elevation_mask_deg, color='gray', zorder=0, alpha=0.5)
 
     ax.set_theta_zero_location('N')
     ax.set_theta_direction(-1)
@@ -113,15 +174,15 @@ def on_sky_view(msg):
         ax.legend(loc=(0.9, -0.05), framealpha=0.3, frameon=False)
 
     if show_title:
-        stamp = datetime.utcfromtimestamp(msg.header.stamp.secs).strftime('%Y-%m-%d %H:%M:%S')
-        lat = msg.reference_position.latitude
-        lon = msg.reference_position.longitude
+        stamp = datetime.utcfromtimestamp(header.stamp.secs).strftime('%Y-%m-%d %H:%M:%S')
+        lat = reference_position.latitude
+        lon = reference_position.longitude
         title = "%s UTC, %0.2f° %s, %0.2f° %s" % (
             stamp, abs(lat), "N" if lat >= 0 else "S", abs(lon), "E" if lon >= 0 else "W")
         ax.set_title(title, y=1.0, color='gray')
 
     canvas.draw()
-    img = cv.cv2_to_imgmsg(np.asarray(canvas.buffer_rgba()), encoding='rgba8', header=msg.header)
+    img = cv.cv2_to_imgmsg(np.asarray(canvas.buffer_rgba()), encoding='rgba8', header=header)
     pub.publish(img)
 
 
@@ -153,5 +214,6 @@ if __name__ == '__main__':
 
     sub = rospy.Subscriber("satellites", SatellitesList, on_satellites, queue_size=1)
     sub2 = rospy.Subscriber("sky_view", SkyView, on_sky_view, queue_size=1)
+    sub3 = rospy.Subscriber("fix", GPSFix, on_gps_fix, queue_size=1)
 
     rospy.spin()
