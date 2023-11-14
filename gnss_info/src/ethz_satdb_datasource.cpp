@@ -171,7 +171,7 @@ public:
     TLENavDataFactory()
     {
         const ObsID obs {ObservationType::NavMsg, CarrierBand::Any, TrackingCode::Any};
-        for (const auto& satSystem : gnsstk::SatelliteSystemIterator())
+        for (const auto& satSystem : SatelliteSystemIterator())
             this->supportedSignals.insert(NavSignalID(satSystem, obs, NavType::Any));
     }
 
@@ -194,11 +194,6 @@ public:
 
         if (this->navValidity == NavValidityType::InvalidOnly)
             return true;
-
-        if (this->processedFiles.find(filename) != this->processedFiles.end())
-            return true;
-
-        this->processedFiles.insert(filename);
 
         tle_t tles{};
         if (!tle_read(filename.c_str(), &tles))
@@ -265,7 +260,6 @@ public:
 
 protected:
     static std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo> satelliteInfo;
-    std::unordered_set<std::string> processedFiles;
 };
 
 std::unordered_map<uint32_t, gnss_info_msgs::SatelliteInfo> TLENavDataFactory::satelliteInfo;
@@ -453,6 +447,7 @@ bool EthzSatdbDataSource::load(const ros::Time& startTime, const ros::Time& endT
     }
 
     auto hadError {false};
+    size_t numLoaded {0u};
     for (const auto& day : days)
     {
         const auto file = this->data->getCacheFile(day);
@@ -474,8 +469,11 @@ bool EthzSatdbDataSource::load(const ros::Time& startTime, const ros::Time& endT
             continue;
         }
 
+        numLoaded++;
         this->data->loadedDays.insert(day);
     }
+
+    ROS_INFO("Successfully loaded orbits for %zu days.", numLoaded);
     return !hadError;
 }
 
