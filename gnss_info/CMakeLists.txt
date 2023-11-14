@@ -104,6 +104,10 @@ if (CATKIN_ENABLE_TESTING)
     -build/c++11,-readability/nolint,-readability/todo,-legal/copyright,-build/namespaces")
   roslint_cpp(${ROSLINT_SRC})
 
+  # Run roslint on Python sources
+  file(GLOB_RECURSE python_files nodes/sky_plot)
+  roslint_python("${python_files}")
+
   roslint_add_test()
 
   catkin_add_gtest(test_igs_satellite_metadata test/test_igs_satellite_metadata.cpp)
