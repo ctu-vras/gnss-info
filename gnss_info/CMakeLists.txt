@@ -97,7 +97,7 @@ if (CATKIN_ENABLE_TESTING)
   endif()
 
   # Roslint C++ - checks formatting and some other rules for C++ files
-  file(GLOB_RECURSE ROSLINT_SRC src/*.cpp include/${PROJECT_NAME}/*.h nodes/*.cpp)
+  file(GLOB_RECURSE ROSLINT_SRC src/*.cpp include/${PROJECT_NAME}/*.h nodes/*.cpp test/*.cpp)
 
   set(ROSLINT_CPP_OPTS "--extensions=h,hpp,hh,c,cpp,cc;--linelength=120;--filter=\
     -build/header_guard,-readability/namespace,-whitespace/braces,-runtime/references,\
@@ -105,4 +105,12 @@ if (CATKIN_ENABLE_TESTING)
   roslint_cpp(${ROSLINT_SRC})
 
   roslint_add_test()
+
+  catkin_add_gtest(test_igs_satellite_metadata test/test_igs_satellite_metadata.cpp)
+  target_link_libraries(test_igs_satellite_metadata satellite_metadata ${catkin_LIBRARIES})
+  target_compile_definitions(test_igs_satellite_metadata PRIVATE TEST_CACHE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/")
+
+  catkin_add_gtest(test_ethz_satdb test/test_ethz_satdb.cpp)
+  target_link_libraries(test_ethz_satdb orbital_data satellite_metadata ${catkin_LIBRARIES})
+  target_compile_definitions(test_ethz_satdb PRIVATE TEST_CACHE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/")
 endif()
