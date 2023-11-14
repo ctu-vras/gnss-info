@@ -90,14 +90,14 @@ std::unordered_set<std::string> NavLibraryOrbitalDataProvider::getConstellations
 
 bool NavLibraryOrbitalDataProvider::load(const ros::Time& time, const cras::optional<bool>& precise)
 {
-    bool success {true};
+    bool success {false};
     for (const auto& source : this->data->sources)
     {
         if (precise.has_value() && *precise && !source->isPrecise())
             continue;
         if (precise.has_value() && !*precise && !source->isApproximate())
             continue;
-        success &= source->load(
+        success |= source->load(
             time, [this](const std::string& file) {return this->data->factory->addDataSource(file);});
     }
     return success;
@@ -106,14 +106,14 @@ bool NavLibraryOrbitalDataProvider::load(const ros::Time& time, const cras::opti
 bool NavLibraryOrbitalDataProvider::load(const ros::Time& startTime, const ros::Time& endTime,
     const cras::optional<bool>& precise)
 {
-    bool success {true};
+    bool success {false};
     for (const auto& source : this->data->sources)
     {
         if (precise.has_value() && *precise && !source->isPrecise())
             continue;
         if (precise.has_value() && !*precise && !source->isApproximate())
             continue;
-        success &= source->load(startTime, endTime,
+        success |= source->load(startTime, endTime,
             [this](const std::string& file) {return this->data->factory->addDataSource(file);});
     }
     return success;

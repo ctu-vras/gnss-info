@@ -77,6 +77,7 @@ bool OrbitalDataManager::load(const ros::Time& time, const cras::optional<bool>&
         if (provider->load(time, precise))
             return true;
     }
+    ROS_ERROR_THROTTLE(1.0, "No orbit data provider loaded for time %s.", cras::to_string(time).c_str());
     return false;
 }
 
@@ -93,6 +94,8 @@ bool OrbitalDataManager::load(
         if (provider->load(startTime, endTime, precise))
             return true;
     }
+    ROS_ERROR_THROTTLE(1.0, "No orbit data provider loaded between %s and %s.",
+        cras::to_string(startTime).c_str(), cras::to_string(endTime).c_str());
     return false;
 }
 
