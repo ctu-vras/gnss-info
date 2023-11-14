@@ -11,6 +11,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <unordered_set>
 
 #include <gnss_info/igs_satellite_metadata.h>
 #include <gnss_info_msgs/Enums.h>

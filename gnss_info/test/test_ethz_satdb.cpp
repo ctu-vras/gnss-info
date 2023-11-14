@@ -10,6 +10,7 @@
 #include "gtest/gtest.h"
 
 #include <cstdlib>
+#include <memory>
 #include <string>
 
 #include <gnss_info/ethz_satdb_datasource.h>
